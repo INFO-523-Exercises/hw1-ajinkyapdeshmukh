@@ -1,0 +1,354 @@
+---
+title: "Getting to Know R_hw1"
+author: "Ajinkya Deshmukh"
+format: html
+editor: visual
+---
+
+## Goal of the Assignment
+
+Practicing basic R Commands/methods for descriptive data analysis.\
+
+## Installing Required Packages
+
+Preparing the environment with the required packages to be installed
+
+```{r}
+#install.packages("pacman") #installing pacman to setup the environment for futher operations
+```
+
+Using the installed package to load the data
+
+```{r}
+library(pacman)
+
+p_load(dlookr,             
+       DMwR2,              #Used for Data Mining with R functions
+       GGally,             #Pair-wise plots using ggplot2 to create plots
+       Hmisc,              #Used for Data Analysis
+       palmerpenguins,     #Alternative to the Iris Dataset
+       tidyverse)          #Data wrangling, data manipulation and visualization
+```
+
+Loading Data
+
+```{r}
+data(algae, package = "DMwR2")
+
+algae |> glimpse()        #Glimpse is used to see every column in a data framne
+```
+
+**"\|\>"** pipe is utilized for most functions in R, whereas **"%\>%"** pipe is restricted for **tidyverse**.
+
+### 
+
+Calculating Mean, Median, Mode below:
+
+### Mean
+
+```{r}
+algae$a1 |>
+  mean()
+```
+
+### Median
+
+```{r}
+algae$a1 |>
+  median()
+```
+
+### Mode
+
+R does not have a predefined function for Mode, hence creating a function to demonstrate how functions are created and calculating the Mode in the same.
+
+```{r}
+Mode <- function(x, na.rm=FALSE){
+  if(na.rm) x<-x[!is.na(x)]
+  ux <- unique(x)
+  return(ux[which.max(tabulate(match(x, ux)))])
+}
+algae$a2 |> Mode()
+```
+
+### 
+
+### DMwR centralValue():
+
+This function returns the median for numerical variable, or mode for nominal variables.
+
+```{r}
+algae$a1 |> centralValue()       #Numerical variable
+```
+
+```{r}
+algae$speed |> centralValue()
+```
+
+#### Below we are calculating the variations (Statistics of spread)
+
+### Variance
+
+```{r}
+algae$a1 |> var()
+```
+
+### Standard deviation
+
+```{r}
+algae$a1 |> sd()
+```
+
+### 
+
+### Range
+
+```{r}
+algae$a1 |> range()             #Gives both Maximum and Minimum values
+```
+
+#### Maximum value
+
+```{r}
+algae$a1 |> max()               #Gives only Maximum value
+```
+
+#### Minimum value
+
+```{r}
+algae$a1 |> min()               #Gives only Minimum value
+```
+
+### Interquartile range
+
+-   Describes the spread or dispersion of a dataset.
+
+-   **Quantile Range =\> IQR \<- 3rd Quantile - 1st Quantile**
+
+```{r}
+algae$a1 |> IQR()               #3rd quartile (75%) - 1st quartile (25%)
+```
+
+### Quantiles
+
+-   Quantile is a statistical term that represents a data point or a set of data points at a specific position within a ordered dataset.
+
+-   Quantiles are used to divide a dataset into equal-sized portions, allowing the user to understand the distribution of data values.
+
+-   Quantile function in R is used to calculate various quantiles of a dataset.
+
+```{r}
+algae$a1 |> quantile()
+```
+
+```{r}
+algae$a1 |> quantile(probs = c(0.2, 0.8))     #specific quantiles provided
+```
+
+## Missing Values
+
+-   Library **"purrr"** is used for working with and manipulating data in a more functional and consistent way.
+
+-   **"purrr"** provides a set of tools for iterating, mapping and applying functions to elements of lists, vectors and data frames.
+
+-   It is useful in dealing with complex data structures and performing repetitive tasks on them.
+
+```{r}
+library(purrr)
+#Compute the total number of NA values in the dataset
+nas <-algae %>%
+  purrr::map_dbl(~sum(is.na(.))) %>%
+  sum()
+
+cat("The Dataset contains ", nas, "NA values. \n")
+```
+
+```{r}
+#Compute the number of incomplete rows in the dataset
+incomplete_rows <- algae %>%
+  summarise_all(~!complete.cases(.)) %>%
+  nrow()
+```
+
+```{r}
+cat("The dataset contains ", incomplete_rows, "(out of ",
+    nrow(algae),") incomplete rows. \n")
+```
+
+### Summary of a Dataset
+
+```{r}
+algae |> summary()
+```
+
+## Hmisc's describe()
+
+-   It is used to generate summary statistics and descriptive statistics for a dataset.
+
+```{r}
+data("penguins")
+penguins |> Hmisc::describe()
+```
+
+-   **GMD** is described as "**Geometric Mean Deviation**" which is the mean absolute difference between any pairs of observations.
+
+-   It is a measure of the dispersion or variability of as a set of positive values relative to their geometric mean.
+
+## dlookr's describe()
+
+```{r}
+penguins |> dlookr::describe()
+```
+
+### 
+
+## Summaries on subset of data
+
+-   **dplyr's summarise()** and **summarise_all(),** or use them with **select()** and **group_by()** to create summaries on subset of data.\
+    **NOTE: summarise() = summarize()**
+
+    ```{r}
+    algae |> 
+      summarise(avgNO3 = mean(NO3, na.rm = TRUE),
+                medA1 = median(a1))
+    ```
+
+-   **summarise_all()** can be used to apply any function that produces a scalar value to any column of a data frame table.
+
+    ```{r}
+    algae |>
+      select(mxPH:Cl) |>
+      summarise_all(list(mean, median), na.rm = TRUE)
+    ```
+
+    ```{r}
+    algae |>
+      select(a1:a7) |>
+      summarise_all(funs(var))
+    ```
+
+    ```{r}
+    algae |> 
+      select(a1:a7) |>
+      summarise_all(c("min", "max"))
+    ```
+
+#### Use Summarise() with group_by()
+
+```{r}
+algae |>
+  group_by(season, size) |>
+  summarise(nObs = n(), mA7 = median(a7))
+```
+
+```{r}
+penguins |>
+  group_by(species) |>
+  summarise(var = var(bill_length_mm, na.rm = TRUE))
+```
+
+## Aggregating Data
+
+-   Aggregating can be helpful for summary functions.
+
+-   It does not return a scalar.
+
+    ```{r}
+    penguins |>
+      group_by(species) |>
+      reframe(var = quantile(bill_length_mm, na.rm = TRUE))
+    ```
+
+-   **reframe() :** it expects a scalar returned by the function, however **quantile** returns a vector.
+
+-   Aggregating data with summarize is no longer used, **reframe()** should be used instead.
+
+-   **dlookr** is recommended to be used.
+
+    ```{r}
+    penguins |>
+      group_by(species) |>
+      dlookr::describe(bill_length_mm)
+    ```
+
+## Getting to know the Dataset:
+
+1.  List data types of the attributes in your tidy dataset
+
+    -   **str()** function can be used display the data types of attributes in the tidy dataset.
+
+        ```{r}
+        data("mtcars")              #taking mtcars dataset into consideration
+        str(mtcars)
+        ```
+
+2.  Check for skewness in data distribution in the attributes
+
+    -   To check skewness, **skewness()** function can be used from **e1071** package.
+
+        ```{r}
+        #install.packages("e1071")   #installing package e1071
+        library(e1071)
+
+        skewness(mtcars$gear) #calulating skewness for a specific attribute of dataset
+        ```
+
+3.  Check for correlations among attributes
+
+    -   
+
+    -   To check correlation among the attributes, **cor()** function is used.
+
+    -   This function calculates correlation between pairs of numerical attributes.
+
+        ```{r}
+        #calculating the correlation matrix for all numerical attributes in the dataset
+        correlation_matrix <- cor(mtcars[, sapply(mtcars,is.numeric)])
+
+        print(correlation_matrix) 
+        ```
+
+4.  Examine the extent of missing data. What would be the best way to deal with the missing data in this case?
+
+    -   To check for missing data, **is.na()** or **summary()** can be used as below:
+
+        ```{r}
+        any_missing <- any(is.na(penguins))                        #checking if data is missing in the entire dataset
+
+        missing_data <- sum(is.na(penguins$sex))                   #calculating the total of missing data in specific colmun
+        missing_values <- which(is.na(penguins$sex))               #checking which are the missing values in the dataset
+
+        print(paste("Missing Data in the dataset: ", any_missing), quote = FALSE)
+        print(paste("Missing data in column/attribute: ", missing_data), quote = FALSE)
+        print(paste("Missing Values in dataset: ", missing_values), quote = FALSE)
+        ```
+
+-   The Best way to deal with missing data in this case is to use the following methods:
+
+1.  **na.omit** − It simply rules out any rows that contain any missing value and forgets those rows forever.
+
+    ```{r}
+    na.omit(missing_values)               #omitting the rows which contains the missing values.
+    ```
+
+2.  **na.exclude** − This agument ignores rows having at least one missing value.
+
+    ```{r}
+    na.exclude(missing_values)           #this way ignores the rows having at least one missing value.
+    ```
+
+3.  **na.pass** − Take no action.
+
+    ```{r}
+    na.pass(missing_values)              #this way takes no action on the missing values.
+    ```
+
+4.  **na.fail** − It terminates the execution if any of the missing values are found.
+
+    ```{r}
+    na.fail(missing_values)              #this way fails the execution if any missing value is found in the dataset.
+    ```
+
+```{r}
+print("***************END OF THE DOCUMENT***************")
+```
